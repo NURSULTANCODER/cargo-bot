@@ -5,8 +5,8 @@ const token = '7828091519:AAF87CbqLkjS8OQLhcn8GQVOlKx-YFon22I';
 const bot = new TelegramBot(token, { polling: true });
 
 const users = {};
+let orderCounter = 600;
 
-// Функция форматирования номера телефона
 function formatKyrgyzPhoneNumber(input) {
   const digits = input.replace(/\D/g, '');
   let localPart = digits;
@@ -22,64 +22,65 @@ function formatKyrgyzPhoneNumber(input) {
   return localPart.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3');
 }
 
-// /start
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
   users[chatId] = { step: 'awaitingName' };
-  bot.sendMessage(chatId, 'Пожалуйста, введите ваше ФИО:');
+  bot.sendMessage(chatId, 'Пожалуйста, введите ваш номер:');
 });
 
-// сообщения
 bot.on('message', (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text;
 
-  // Игнорируем /start
-  if (text === '/start') return;
+  if (text === 'Новый заказ') {
+    const chatId = msg.chat.id;
+    users[chatId] = { step: 'awaitingName' };
+    bot.sendMessage(chatId, 'Пожалуйста, введите ваш номер:');
+    return;
+  }})
+
+bot.on('message', (msg) => {
+  const chatId = msg.chat.id;
+  const text = msg.text;
+
+  if (text === '/start' || text === 'Новый заказ') return;
 
   const user = users[chatId];
 
-  // Шаг 1: получаем ФИО
   if (user && user.step === 'awaitingName') {
     user.name = text;
     user.step = 'awaitingPhone';
-    bot.sendMessage(chatId, 'Теперь введите ваш номер телефона:');
-    return;
-  }
-
-  // Шаг 2: получаем телефон
-  if (user && user.step === 'awaitingPhone') {
-    user.phone = formatKyrgyzPhoneNumber(text);
-    user.step = 'ready';
-    user.orders = [];
-
-    const orderCode = generateOrderCode();
-    user.orders.push(orderCode);
-
-    bot.sendMessage(chatId, "1：ENSAR -", {
+    orderCounter++;
+    bot.sendMessage(chatId, `
+1：ENSAR - ${orderCounter}
+2：18160860859
+3：浙江省 金华市 义乌市 
+4：北苑街道春华路588号和意电商园A6栋
+103 ENSAR-${orderCounter} +996 ${formatKyrgyzPhoneNumber(text)}
+    `, {
       reply_markup: {
-        keyboard: [['🆕 Новый заказ']],
-        resize_keyboard: true
+        keyboard: [['Новый заказ']],
+        resize_keyboard: true,
+        one_time_keyboard: false
       }
     });
     return;
-  }
-
-  // Новый заказ
-  if (user && user.step === 'ready' && text === '🆕 Новый заказ') {
-    const orderCode = generateOrderCode();
-    user.orders.push(orderCode);
-    bot.sendMessage(chatId, buildOrderText(orderCode, user));
-    return;
+  }else {
+    bot.sendMessage(chatId, `Выберите дейтвие
+          `, {
+            reply_markup: {
+              keyboard: [['Новый заказ']],
+              resize_keyboard: true,
+              one_time_keyboard: false
+            }
+          });
   }
 });
 
-// Генерация кода заказа
 function generateOrderCode() {
   return `#${String(orderCounter++).padStart(4, '0')}`;
 }
 
-// Шаблон текста
 function buildOrderText(orderCode, user) {
   return `1：ENSAR - ${orderCode}
 2：18160860859
