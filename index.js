@@ -1,3 +1,20 @@
+const fs = require('fs');
+
+const counterFile = 'orderCounter.json';
+
+function loadOrderCounter() {
+  if (fs.existsSync(counterFile)) {
+    const data = fs.readFileSync(counterFile, 'utf8');
+    return JSON.parse(data).counter;
+  }
+  return 600;
+}
+
+function saveOrderCounter(counter) {
+  fs.writeFileSync(counterFile, JSON.stringify({ counter }));
+}
+
+
 const TelegramBot = require('node-telegram-bot-api');
 
 const token = '7828091519:AAF87CbqLkjS8OQLhcn8GQVOlKx-YFon22I';
@@ -5,7 +22,7 @@ const token = '7828091519:AAF87CbqLkjS8OQLhcn8GQVOlKx-YFon22I';
 const bot = new TelegramBot(token, { polling: true });
 
 const users = {};
-let orderCounter = 600;
+let orderCounter = loadOrderCounter();
 
 function formatKyrgyzPhoneNumber(input) {
   const digits = input.replace(/\D/g, '');
@@ -64,6 +81,7 @@ bot.on('message', (msg) => {
         one_time_keyboard: false
       }
     });
+    saveOrderCounter(orderCounter)
     return;
   }else {
     bot.sendMessage(chatId, `Выберите дейтвие
@@ -76,15 +94,3 @@ bot.on('message', (msg) => {
           });
   }
 });
-
-function generateOrderCode() {
-  return `#${String(orderCounter++).padStart(4, '0')}`;
-}
-
-function buildOrderText(orderCode, user) {
-  return `1：ENSAR - ${orderCode}
-2：18160860859
-3：浙江省 金华市 义乌市 
-4：北苑街道春华路588号和意电商园A6栋
-103 ENSAR-${orderCode} +996 ${user.phone}`;
-}
